@@ -108,7 +108,8 @@ class MarioExpert:
 
         # Implement your code here to choose the best action
         # time.sleep(0.1)
-        return random.randint(0, len(self.environment.valid_actions) - 1)
+
+        return 2
 
     def step(self):
         """
@@ -119,7 +120,7 @@ class MarioExpert:
 
         # Choose an action - button press or other...
         action = self.choose_action()
-
+        print(action)
         # Run the action on the environment
         self.environment.run_action(action)
 
