@@ -30,7 +30,7 @@ class MarioController(MarioEnvironment):
     def __init__(
         self,
         act_freq: int = 10,
-        emulation_speed: int = 0,
+        emulation_speed: int = 1,
         headless: bool = False,
     ) -> None:
         super().__init__(
@@ -101,15 +101,31 @@ class MarioExpert:
 
         self.video = None
 
+    def get_mario_pos(self, game_area):
+        for i in range(len(game_area)):
+            for j in range(len(game_area[i])):
+                if game_area[i][j] == 1:
+                    return j+1, i+1
+
+    def check_infront(self, x, y, game_area) -> bool:
+        if game_area[y][x+1] != 0 or game_area[y-1][x+1] != 0:
+            return False
+        return True
+
     def choose_action(self):
         state = self.environment.game_state()
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
+        x, y = self.get_mario_pos(game_area)
+        print(game_area, x, y)
 
-        # Implement your code here to choose the best action
-        # time.sleep(0.1)
+        if self.check_infront(x, y, game_area):
+            return 2
+        else:
+            return 4
+        # # Implement your code here to choose the best action
+        time.sleep(1)
 
-        return 2
 
     def step(self):
         """
