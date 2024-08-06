@@ -107,22 +107,32 @@ class MarioExpert:
                 if game_area[i][j] == 1:
                     return j+1, i+1
 
-    def check_infront(self, x, y, game_area) -> bool:
+    def check_infront_clear(self, x, y, game_area) -> bool:
         if game_area[y][x+1] != 0 or game_area[y-1][x+1] != 0:
             return False
         return True
 
-    def choose_action(self):
+    def check_powerup(self, x,y,game_area) -> bool:
+        for i in range(y-5, y):
+            if game_area[i][x+1] == 13 or game_area[i][x] == 13:
+                return True
+        return False
+    def choose_action(self) -> list[int]:
         state = self.environment.game_state()
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
         x, y = self.get_mario_pos(game_area)
         print(game_area, x, y)
 
-        if self.check_infront(x, y, game_area):
-            return 2
+        print(self.check_powerup(x, y, game_area))
+
+
+        if self.check_infront_clear(x, y, game_area):
+            if self.check_powerup(x, y, game_area):
+                return [4,2]
+            return [2]
         else:
-            return 4
+            return [4]
         # # Implement your code here to choose the best action
         time.sleep(1)
 
@@ -135,10 +145,11 @@ class MarioExpert:
         """
 
         # Choose an action - button press or other...
-        action = self.choose_action()
-        print(action)
+        actions = self.choose_action()
+        print(actions)
         # Run the action on the environment
-        self.environment.run_action(action)
+        for action in actions:
+            self.environment.run_action(action)
 
     def play(self):
         """
