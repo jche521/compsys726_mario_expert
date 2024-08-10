@@ -108,13 +108,19 @@ class MarioExpert:
                     return j+1, i+1
 
     def check_infront_clear(self, x, y, game_area) -> bool:
-        if game_area[y][x+1] != 0 or game_area[y-1][x+1] != 0:
+        if game_area[y][x+1] != 0 or game_area[y-1][x+1] != 0 or game_area[y][x+2] != 0 or game_area[y-1][x+2] != 0:
             return False
         return True
 
     def check_powerup(self, x,y,game_area) -> bool:
         for i in range(y-5, y):
             if game_area[i][x+1] == 13 or game_area[i][x] == 13:
+                return True
+        return False
+
+    def check_up_clear(self, x,y,game_area) -> bool:
+        for i in range(y - 5, y):
+            if game_area[i][x + 2] == 15:
                 return True
         return False
     def choose_action(self) -> list[int]:
@@ -132,6 +138,8 @@ class MarioExpert:
                 return [4,2]
             return [2]
         else:
+            if self.check_infront_clear(x, y, game_area):
+                return [1]
             return [4]
         # # Implement your code here to choose the best action
         time.sleep(1)
