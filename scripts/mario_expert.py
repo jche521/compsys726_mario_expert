@@ -9,6 +9,7 @@ Original Mario Manual: https://www.thegameisafootarcade.com/wp-content/uploads/2
 import json
 import logging
 import random
+from argparse import Action
 
 import cv2
 from mario_environment import MarioEnvironment
@@ -94,6 +95,7 @@ class MarioExpert:
         headless (bool, optional): Whether to run the game in headless mode. Defaults to False.
     """
 
+    actions = []
     def __init__(self, results_path: str, headless=False):
         self.results_path = results_path
 
@@ -112,39 +114,64 @@ class MarioExpert:
             return False
         return True
 
+    def check_infront_hole(self, x, y, game_area) -> bool:
+        if game_area[15][x+1] == 0 or game_area[15][x+2] == 0:
+            return True
+        return False
     def check_powerup(self, x,y,game_area) -> bool:
         for i in range(y-5, y):
             if game_area[i][x+1] == 13 or game_area[i][x] == 13:
                 return True
         return False
 
-    def check_up_clear(self, x,y,game_area) -> bool:
-        for i in range(y - 5, y):
-            if game_area[i][x + 2] == 15:
-                return True
-        return False
-    def choose_action(self) -> list[int]:
+    def check_up_clear(self, x, y, game_area) -> bool:
+        for i in range(1, 5):
+            if game_area[y - i][x + 3] == 15 or game_area[y - i][x + 2] == 15:
+                return False
+        return True
+
+    def choose_action(self):
         state = self.environment.game_state()
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
         x, y = self.get_mario_pos(game_area)
         print(game_area, x, y)
 
-        print(self.check_powerup(x, y, game_area))
+        # if self.check_infront_clear(x, y, game_area):
+        #     if self.check_powerup(x, y, game_area):
+        #         print("power up - jump, right")
+        #         self.actions.append(4)  # Jump
+        #         self.actions.append(2)  # Right
+        #     else:
+        #         print("in front clear - right")
+        #         self.actions.append(2)  # Right
+        # else:
+        #     if self.check_up_clear(x, y, game_area):
+        #         print("front not clear up clear - jump")
+        #         self.actions.append(4)  # Jump
+        #     else:
+        #         print("front not clear up not clear - left, right, jump")
+        #         self.actions.extend([1,1,1, 2, 2, 4])  # Left, Right, Jump
 
-
-        if self.check_infront_clear(x, y, game_area):
-            if self.check_powerup(x, y, game_area):
-                return [4,2]
-            return [2]
+        if self.check_infront_clear(x, y, game_area) == False:
+            print("Infront is not clear")
+            self.actions.append(4)
+        elif self.check_infront_hole(x,y,game_area):
+            print("Infront is a hole")
+            if y > 6:
+                self.actions.append(4)
+            else:
+                self.actions.append(2)
+        elif self.check_up_clear(x, y, game_area) == False:
+            print("Up is not clear")
+            self.actions.extend([1, 1, 1, 2, 4, 2])
+        elif self.check_powerup(x, y, game_area):
+            print("grabbing powerup")
+            self.actions.extend([4,2])
         else:
-            if self.check_infront_clear(x, y, game_area):
-                return [1]
-            return [4]
-        # # Implement your code here to choose the best action
-        time.sleep(1)
+            print("not defined")
 
-
+            self.actions.append(2)  # Right
     def step(self):
         """
         Modify this function as required to implement the Mario Expert agent's logic.
@@ -153,11 +180,16 @@ class MarioExpert:
         """
 
         # Choose an action - button press or other...
-        actions = self.choose_action()
-        print(actions)
+        if len(self.actions) == 0:
+            self.choose_action()
+
         # Run the action on the environment
-        for action in actions:
-            self.environment.run_action(action)
+        print("before",self.actions)
+        self.environment.run_action(self.actions.pop(0))
+        print("after",self.actions)
+
+
+
 
     def play(self):
         """
