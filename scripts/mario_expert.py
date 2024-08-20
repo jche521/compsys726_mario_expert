@@ -43,23 +43,23 @@ class MarioController(MarioEnvironment):
         self.act_freq = act_freq
 
         # Example of valid actions based purely on the buttons you can press
-        valid_actions: list[WindowEvent] = [
-            WindowEvent.PRESS_ARROW_DOWN,
-            WindowEvent.PRESS_ARROW_LEFT,
-            WindowEvent.PRESS_ARROW_RIGHT,
-            WindowEvent.PRESS_ARROW_UP,
-            WindowEvent.PRESS_BUTTON_A,
-            WindowEvent.PRESS_BUTTON_B,
-        ]
+        valid_actions: dict[str, WindowEvent] = {
+            "down": WindowEvent.PRESS_ARROW_DOWN,
+            "left": WindowEvent.PRESS_ARROW_LEFT,
+            "right": WindowEvent.PRESS_ARROW_RIGHT,
+            "up": WindowEvent.PRESS_ARROW_UP,
+            "jump": WindowEvent.PRESS_BUTTON_A,
+            "slide": WindowEvent.PRESS_BUTTON_B,
+        }
 
-        release_button: list[WindowEvent] = [
-            WindowEvent.RELEASE_ARROW_DOWN,
-            WindowEvent.RELEASE_ARROW_LEFT,
-            WindowEvent.RELEASE_ARROW_RIGHT,
-            WindowEvent.RELEASE_ARROW_UP,
-            WindowEvent.RELEASE_BUTTON_A,
-            WindowEvent.RELEASE_BUTTON_B,
-        ]
+        release_button: dict[str, WindowEvent] = {
+            "down": WindowEvent.RELEASE_ARROW_DOWN,
+            "left": WindowEvent.RELEASE_ARROW_LEFT,
+            "right": WindowEvent.RELEASE_ARROW_RIGHT,
+            "up": WindowEvent.RELEASE_ARROW_UP,
+            "jump": WindowEvent.RELEASE_BUTTON_A,
+            "slide": WindowEvent.RELEASE_BUTTON_B,
+        }
 
         self.valid_actions = valid_actions
         self.release_button = release_button
@@ -70,7 +70,7 @@ class MarioController(MarioEnvironment):
 
         return mario_x, mario_y
 
-    def run_action(self, action: int) -> None:
+    def run_action(self, action: str) -> None:
         """
         This is a very basic example of how this function could be implemented
 
@@ -119,6 +119,8 @@ class MarioExpert:
         x, y = self.environment.get_mario_pos()
         mario_x = self.environment.game_state()["x_position"]
         mario_y = y
+
+        self.actions.append("right")
 
 
 
