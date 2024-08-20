@@ -10,10 +10,16 @@ import json
 import logging
 import random
 from argparse import Action
+from enum import Enum
 
 import cv2
 from mario_environment import MarioEnvironment
 from pyboy.utils import WindowEvent
+
+
+class EnemyMap(Enum):
+    GOOMBA = 0x00
+    NOKOBON = 0x03
 
 
 class MarioController(MarioEnvironment):
@@ -70,6 +76,25 @@ class MarioController(MarioEnvironment):
 
         return mario_x, mario_y
 
+    def get_obj_pos(self, req_obj_type):
+        MARIO_OBJ_TABLE = 0xD100
+        OBJ_SIZE = 0x0b
+        for i in range(10):  # object table stores up to 10 object
+            obj_addr = MARIO_OBJ_TABLE + (i * OBJ_SIZE) # get the object address stored in table
+            obj_type = self._read_m(obj_addr) # get object type associated with the object
+            print(obj_addr, obj_type, req_obj_type)
+            if obj_type == req_obj_type: # if matched, then return the current position of the object
+                y = self._read_m(obj_addr + 2)
+                x = self._read_m(obj_addr + 3)
+                return x, y
+        return None
+
+    def is_enemy_near(self) -> bool:
+        for enemy in EnemyMap:
+            pos = self.get_obj_pos(enemy.value) # get object position if it is stored in the next 10 objects
+            print(enemy, enemy.value, pos)
+            return pos is not None and pos[0] != 0 and pos[1] != 0
+
     def run_action(self, action: str) -> None:
         """
         This is a very basic example of how this function could be implemented
@@ -110,8 +135,6 @@ class MarioExpert:
 
         self.video = None
 
-
-
     def choose_action(self):
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
@@ -120,10 +143,11 @@ class MarioExpert:
         mario_x = self.environment.game_state()["x_position"]
         mario_y = y
 
-        self.actions.append("right")
-
-
-
+        if self.environment.is_enemy_near():
+            self.actions.append("jump")
+            self.actions.append("right")
+        else:
+            self.actions.append("right")
 
     def step(self):
         """
