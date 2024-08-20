@@ -15,7 +15,12 @@ from enum import Enum
 import cv2
 from mario_environment import MarioEnvironment
 from pyboy.utils import WindowEvent
+from dataclasses import dataclass
 
+@dataclass
+class Coordinate:
+    x: int
+    y: int
 
 class EnemyMap(Enum):
     GOOMBA = 0x00
@@ -74,7 +79,7 @@ class MarioController(MarioEnvironment):
         mario_x = self._read_m(0xC201)
         mario_y = self._read_m(0xC202)
 
-        return mario_x, mario_y
+        return Coordinate(mario_x, mario_y)
 
     def get_obj_pos(self, req_obj_type):
         MARIO_OBJ_TABLE = 0xD100
@@ -86,14 +91,16 @@ class MarioController(MarioEnvironment):
             if obj_type == req_obj_type: # if matched, then return the current position of the object
                 y = self._read_m(obj_addr + 2)
                 x = self._read_m(obj_addr + 3)
-                return x, y
+                return Coordinate(x, y)
         return None
+
+    def is_colliding(self, ):
 
     def is_enemy_near(self) -> bool:
         for enemy in EnemyMap:
             pos = self.get_obj_pos(enemy.value) # get object position if it is stored in the next 10 objects
             print(enemy, enemy.value, pos)
-            return pos is not None and pos[0] != 0 and pos[1] != 0
+            return pos is not None and pos.x != 0 and pos.y != 0
 
     def run_action(self, action: str) -> None:
         """
@@ -139,9 +146,9 @@ class MarioExpert:
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
 
-        x, y = self.environment.get_mario_pos()
+        coord = self.environment.get_mario_pos()
         mario_x = self.environment.game_state()["x_position"]
-        mario_y = y
+        mario_y = coord.y
 
         if self.environment.is_enemy_near():
             self.actions.append("jump")
