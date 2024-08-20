@@ -64,6 +64,12 @@ class MarioController(MarioEnvironment):
         self.valid_actions = valid_actions
         self.release_button = release_button
 
+    def get_mario_pos(self):
+        mario_x = self._read_m(0xC201)
+        mario_y = self._read_m(0xC202)
+
+        return mario_x, mario_y
+
     def run_action(self, action: int) -> None:
         """
         This is a very basic example of how this function could be implemented
@@ -105,10 +111,16 @@ class MarioExpert:
         self.video = None
 
 
+
     def choose_action(self):
-        state = self.environment.game_state()
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
+
+        x, y = self.environment.get_mario_pos()
+        mario_x = self.environment.game_state()["x_position"]
+        mario_y = y
+
+
 
 
     def step(self):
@@ -120,13 +132,9 @@ class MarioExpert:
 
         # Choose an action - button press or other...
         if len(self.actions) == 0:
-            print("choose action")
             self.choose_action()
-
-        # Run the action on the environment
-        print("before", self.actions)
-        self.environment.run_action(self.actions.pop(0))
-        print("after", self.actions)
+        else:
+            self.environment.run_action(self.actions.pop(0))
 
     def play(self):
         """
