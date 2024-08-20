@@ -104,64 +104,12 @@ class MarioExpert:
 
         self.video = None
 
-    def get_mario_pos(self, game_area):
-        for i in range(len(game_area)):
-            for j in range(len(game_area[i])):
-                if game_area[i][j] == 1:
-                    return j + 1, i + 1
-
-    def check_infront_clear(self, x, y, game_area) -> bool:
-        if game_area[y][x + 1] != 0 or game_area[y - 1][x + 1] != 0 or game_area[y][x + 2] != 0 or game_area[y - 1][
-            x + 2] != 0:
-            return False
-        return True
-
-    def check_infront_hole(self, x, y, game_area) -> bool:
-        if game_area[15][x + 1] == 0:
-            return True
-        return False
-
-    def check_powerup(self, x, y, game_area) -> bool:
-        for i in range(y - 5, y):
-            if game_area[i][x + 1] == 13 or game_area[i][x] == 13:
-                return True
-        return False
-
-    def check_up_clear(self, x, y, game_area) -> bool:
-        for i in range(1, 5):
-            if game_area[y - i][x + 3] == 15 or game_area[y - i][x + 2] == 15:
-                return False
-        return True
 
     def choose_action(self):
         state = self.environment.game_state()
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
 
-        x, y = self.get_mario_pos(game_area)
-        prevX = x
-        prevY = y
-        print(game_area)
-
-        if not self.check_infront_clear(x, y, game_area):
-            print("Infront is not clear")
-            self.actions.extend([4,2, 4])
-        elif self.check_infront_hole(x, y, game_area):
-            print("Infront is a hole")
-            if y > 6:
-                self.actions.append(4)
-            else:
-                self.actions.append(2)
-        elif not self.check_up_clear(x, y, game_area):
-            print("Up is not clear")
-            self.actions.extend([1, 1, 1, 1, 2])
-        elif self.check_powerup(x, y, game_area):
-            print("grabbing powerup")
-            self.actions.extend([4, 2])
-        else:
-            print("not defined")
-
-            self.actions.append(2)  # Right
 
     def step(self):
         """
