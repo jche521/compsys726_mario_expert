@@ -175,16 +175,21 @@ class MarioExpert:
             return True
         return False
 
-    def is_up_clear(self, x, y, game_area) -> bool:
+    def is_up_clear(self, game_area) -> bool:
+        ground_y = self.environment.get_ground_y(game_area)
+        print("y:", ground_y)
         for i in range(1, 5):
-            if game_area[y - i][x + 3] == 15 or game_area[y - i][x + 2] == 15:
+            if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][15] == 15:
                 return False
         return True
 
-    def can_jump(self) -> bool:
+    def can_jump(self, game_area) -> bool:
         if self.environment.is_mario_jumping(): # mario is in air, cannot jump
             return False
         # check up if theres enemy
+        if not self.is_up_clear(game_area):
+            return False
+        return True
 
     def choose_action(self):
         frame = self.environment.grab_frame()
@@ -205,10 +210,13 @@ class MarioExpert:
             if self.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
                 print(f"Collision detected with enemy {enemy.y}, {mario_y}")
                 if enemy.y > mario_y:
-                    self.actions.extend(["left", "left", "right", "jump", "right"])
+                    if not self.can_jump(game_area):
+                        self.actions.extend(["left", "right", "jump", "right"])
+                    else:
+                        self.actions.append("jump")
                 else:
                     self.actions.append("jump")
-                    self.past_enemies.append(enemy)
+                self.past_enemies.append(enemy)
 
         # remove enemy that is already passed
         self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
@@ -232,6 +240,7 @@ class MarioExpert:
         if len(self.actions) == 0:
             self.choose_action()
         else:
+            print(self.actions)
             self.environment.run_action(self.actions.pop(0))
 
     def play(self):
