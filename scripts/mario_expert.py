@@ -96,7 +96,8 @@ class MarioController(MarioEnvironment):
                 return Coordinate(x, y - 1)
         return Coordinate(0, 0)
 
-    def get_ground_y(self, game_area):
+    def get_ground_y(self):
+        game_area = self.game_area()
         for i in range(len(game_area)):
             for j in range(len(game_area[0])):
                 if game_area[i][j] == 1:
@@ -118,7 +119,7 @@ class MarioController(MarioEnvironment):
 
     def is_front_clear(self) -> bool:
         game_area = self.game_area()
-        ground_y = self.get_ground_y(game_area)
+        ground_y = self.get_ground_y()
         print("y:", ground_y)
         if game_area[ground_y-1][11] != 0 or game_area[ground_y-2][11] != 0:
             return False
@@ -126,13 +127,13 @@ class MarioController(MarioEnvironment):
 
     def is_down_clear(self) -> bool:
         game_area = self.game_area()
-        if game_area[15][12] == 0:
+        if game_area[15][10] == 0:
             return True
         return False
 
     def is_up_clear(self) -> bool:
         game_area = self.game_area()
-        ground_y = self.get_ground_y(game_area)
+        ground_y = self.get_ground_y()
         print("y:", ground_y)
         for i in range(1, 5):
             if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][15] == 15:
@@ -231,6 +232,9 @@ class MarioExpert:
 
         if not self.environment.is_front_clear():
             print("Obstacle ahead, jump")
+            self.actions.append("jump")
+            self.actions.append("right")
+        elif self.environment.is_down_clear() and self.environment.get_ground_y() > 10:
             self.actions.append("jump")
             self.actions.append("right")
         else:
