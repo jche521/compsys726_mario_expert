@@ -92,23 +92,10 @@ class MarioController(MarioEnvironment):
             if obj_type == req_obj_type:  # if matched, then return the current position of the object
                 y = self._read_m(obj_addr + 2)
                 x = self._read_m(obj_addr + 3)
-                return Coordinate(x+279, y-1)
+                return Coordinate(x, y-1)
         return Coordinate(0, 0)
 
-    def is_colliding(self, coord1: Coordinate, coord2: Coordinate) -> bool:
-        print(f"Checking collision: Mario({coord1.x}, {coord1.y}), Enemy({coord2.x}, {coord2.y})")
-        x_collision = abs(coord1.x - coord2.x) < 10  # Distance threshold
-        y_collision = abs(coord1.y - coord2.y) < 10  # Add y-check if necessary
-        return x_collision and y_collision
 
-    def is_enemy_near(self):
-        for enemy in EnemyMap:
-            pos = self.get_obj_pos(enemy.value)  # get object position if it is stored in the next 10 objects
-
-            if pos.x != 0 and pos.y != 0:
-                print(enemy, pos)
-                return pos
-        return Coordinate(0, 0)
 
     def run_action(self, action: str) -> None:
         """
@@ -142,6 +129,8 @@ class MarioExpert:
     """
 
     actions = []
+    enemies = []
+    past_enemies = []
 
     def __init__(self, results_path: str, headless=False):
         self.results_path = results_path
@@ -149,6 +138,21 @@ class MarioExpert:
         self.environment = MarioController(headless=headless)
 
         self.video = None
+
+    def is_colliding(self, obj_pos: Coordinate) -> bool:
+        mario_pos = self.environment.get_mario_pos()
+        print(f"Checking collision: Mario({mario_pos.x}, {mario_pos.y}), Enemy({obj_pos.x}, {obj_pos.y})")
+        x_collision = abs(mario_pos.x - obj_pos.x) < 10  # Distance threshold
+        y_collision = abs(mario_pos.y - obj_pos.y) < 10  # Add y-check if necessary
+        return x_collision and y_collision
+
+    def is_enemy_near(self):
+        for enemy in EnemyMap:
+            pos = self.environment.get_obj_pos(enemy.value)  # get object position if it is stored in the next 10 objects
+
+            if pos.x != 0 and pos.y != 0:
+                print(enemy, pos)
+                self.enemies.append(pos)
 
     def choose_action(self):
         frame = self.environment.grab_frame()
@@ -161,22 +165,20 @@ class MarioExpert:
         mario_y = coord.y
         print("Mario position (x, y):", mario_x, mario_y)
 
-        # Get enemy position
-        enemy_pos = self.environment.is_enemy_near()
-        print("Enemy position (x, y):", enemy_pos.x, enemy_pos.y)
+        # Store enemies pos if near
+        self.is_enemy_near()
 
-        # Check for collision
-        if enemy_pos.x != 0 and enemy_pos.y != 0:
-            if self.environment.is_colliding(Coordinate(mario_x, mario_y), enemy_pos):
+        # for all enemies that are near
+        for enemy in self.enemies:
+            if self.is_colliding(Coordinate(enemy.x, enemy.y)): # check if enemy will collide with mario
                 print("Collision detected with enemy.")
                 self.actions.append("jump")
-                self.actions.append("right")
-            else:
-                print("No collision, moving right.")
-                self.actions.append("right")
-        else:
-            print("No enemies nearby, moving right.")
-            self.actions.append("right")
+                self.past_enemies.append(enemy)
+
+        self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
+
+        print("No collision, moving right.")
+        self.actions.append("right")
 
     def step(self):
         """
