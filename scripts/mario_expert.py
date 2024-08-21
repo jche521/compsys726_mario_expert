@@ -81,7 +81,7 @@ class MarioController(MarioEnvironment):
         mario_x = self._read_m(0xC202)
         mario_y = self._read_m(0xC201)
 
-        return Coordinate(mario_x+1, mario_y+1)
+        return Coordinate(mario_x + 1, mario_y + 1)
 
     def get_obj_pos(self, req_obj_type):
         MARIO_OBJ_TABLE = 0xD100
@@ -92,10 +92,14 @@ class MarioController(MarioEnvironment):
             if obj_type == req_obj_type:  # if matched, then return the current position of the object
                 y = self._read_m(obj_addr + 2)
                 x = self._read_m(obj_addr + 3)
-                return Coordinate(x, y-1)
+                return Coordinate(x, y - 1)
         return Coordinate(0, 0)
 
-
+    def get_ground_y(self, game_area):
+        for i in range(len(game_area)):
+            for j in range(len(game_area[0])):
+                if game_area[i][j] == 1:
+                    return i+2
 
     def run_action(self, action: str) -> None:
         """
@@ -148,11 +152,29 @@ class MarioExpert:
 
     def is_enemy_near(self):
         for enemy in EnemyMap:
-            pos = self.environment.get_obj_pos(enemy.value)  # get object position if it is stored in the next 10 objects
-
+            pos = self.environment.get_obj_pos(
+                enemy.value)  # get object position if it is stored in the next 10 objects
             if pos.x != 0 and pos.y != 0:
                 print(enemy, pos)
                 self.enemies.append(pos)
+
+    def is_front_clear(self, game_area) -> bool:
+        ground_y = self.environment.get_ground_y(game_area)
+        print("y:", ground_y)
+        if game_area[ground_y-1][11] != 0 or game_area[ground_y-2][11] != 0:
+            return False
+        return True
+
+    def is_down_clear(self, x, y, game_area) -> bool:
+        if game_area[15][x + 1] == 0:
+            return True
+        return False
+
+    def is_up_clear(self, x, y, game_area) -> bool:
+        for i in range(1, 5):
+            if game_area[y - i][x + 3] == 15 or game_area[y - i][x + 2] == 15:
+                return False
+        return True
 
     def choose_action(self):
         frame = self.environment.grab_frame()
@@ -170,15 +192,21 @@ class MarioExpert:
 
         # for all enemies that are near
         for enemy in self.enemies:
-            if self.is_colliding(Coordinate(enemy.x, enemy.y)): # check if enemy will collide with mario
+            if self.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
                 print("Collision detected with enemy.")
                 self.actions.append("jump")
                 self.past_enemies.append(enemy)
 
+        # remove enemy that is already passed
         self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
 
-        print("No collision, moving right.")
-        self.actions.append("right")
+        if not self.is_front_clear(game_area):
+            print("Obstacle ahead, jump")
+            self.actions.append("jump")
+            self.actions.append("right")
+        else:
+            print("No collision, moving right.")
+            self.actions.append("right")
 
     def step(self):
         """
