@@ -26,7 +26,7 @@ class Coordinate:
 
 class EnemyMap(Enum):
     GOOMBA = 0x00
-    NOKOBON = 0x03
+    NOKOBON = 0x04
 
 
 class MarioController(MarioEnvironment):
@@ -86,6 +86,7 @@ class MarioController(MarioEnvironment):
     def get_obj_pos(self, req_obj_type):
         MARIO_OBJ_TABLE = 0xD100
         OBJ_SIZE = 0x0b
+
         for i in range(10):  # object table stores up to 10 object
             obj_addr = MARIO_OBJ_TABLE + (i * OBJ_SIZE)  # get the object address stored in table
             obj_type = self._read_m(obj_addr)  # get object type associated with the object
@@ -105,6 +106,48 @@ class MarioController(MarioEnvironment):
     def is_mario_jumping(self):
         on_ground_flag = self._read_m(0xC20A)
         return on_ground_flag == 0x00
+
+    def is_colliding(self, obj_pos: Coordinate) -> bool:
+        mario_pos = self.get_mario_pos()
+        print(f"Checking collision: Mario({mario_pos.x}, {mario_pos.y}), Enemy({obj_pos.x}, {obj_pos.y})")
+        x_collision = abs(mario_pos.x - obj_pos.x) < 35  # Distance threshold
+        y_collision = abs(mario_pos.y - obj_pos.y) < 20  # Add y-check if necessary
+        return x_collision and y_collision
+
+
+
+    def is_front_clear(self) -> bool:
+        game_area = self.game_area()
+        ground_y = self.get_ground_y(game_area)
+        print("y:", ground_y)
+        if game_area[ground_y-1][11] != 0 or game_area[ground_y-2][11] != 0:
+            return False
+        return True
+
+    def is_down_clear(self) -> bool:
+        game_area = self.game_area()
+        if game_area[15][12] == 0:
+            return True
+        return False
+
+    def is_up_clear(self) -> bool:
+        game_area = self.game_area()
+        ground_y = self.get_ground_y(game_area)
+        print("y:", ground_y)
+        for i in range(1, 5):
+            if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][15] == 15:
+                return False
+        return True
+
+    def can_jump(self) -> bool:
+        game_area = self.game_area()
+
+        if self.is_mario_jumping(): # mario is in air, cannot jump
+            return False
+        # check up if theres enemy
+        if not self.is_up_clear():
+            return False
+        return True
 
     def run_action(self, action: str) -> None:
         """
@@ -148,13 +191,6 @@ class MarioExpert:
 
         self.video = None
 
-    def is_colliding(self, obj_pos: Coordinate) -> bool:
-        mario_pos = self.environment.get_mario_pos()
-        print(f"Checking collision: Mario({mario_pos.x}, {mario_pos.y}), Enemy({obj_pos.x}, {obj_pos.y})")
-        x_collision = abs(mario_pos.x - obj_pos.x) < 35  # Distance threshold
-        y_collision = abs(mario_pos.y - obj_pos.y) < 20  # Add y-check if necessary
-        return x_collision and y_collision
-
     def is_enemy_near(self):
         for enemy in EnemyMap:
             pos = self.environment.get_obj_pos(
@@ -162,34 +198,6 @@ class MarioExpert:
             if pos.x != 0 and pos.y != 0:
                 print(enemy, pos)
                 self.enemies.append(pos)
-
-    def is_front_clear(self, game_area) -> bool:
-        ground_y = self.environment.get_ground_y(game_area)
-        print("y:", ground_y)
-        if game_area[ground_y-1][11] != 0 or game_area[ground_y-2][11] != 0:
-            return False
-        return True
-
-    def is_down_clear(self, x, y, game_area) -> bool:
-        if game_area[15][x + 1] == 0:
-            return True
-        return False
-
-    def is_up_clear(self, game_area) -> bool:
-        ground_y = self.environment.get_ground_y(game_area)
-        print("y:", ground_y)
-        for i in range(1, 5):
-            if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][15] == 15:
-                return False
-        return True
-
-    def can_jump(self, game_area) -> bool:
-        if self.environment.is_mario_jumping(): # mario is in air, cannot jump
-            return False
-        # check up if theres enemy
-        if not self.is_up_clear(game_area):
-            return False
-        return True
 
     def choose_action(self):
         frame = self.environment.grab_frame()
@@ -207,10 +215,10 @@ class MarioExpert:
 
         # for all enemies that are near
         for enemy in self.enemies:
-            if self.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
+            if self.environment.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
                 print(f"Collision detected with enemy {enemy.y}, {mario_y}")
                 if enemy.y > mario_y:
-                    if not self.can_jump(game_area):
+                    if not self.environment.can_jump():
                         self.actions.extend(["left", "right", "jump", "right"])
                     else:
                         self.actions.append("jump")
@@ -221,7 +229,7 @@ class MarioExpert:
         # remove enemy that is already passed
         self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
 
-        if not self.is_front_clear(game_area):
+        if not self.environment.is_front_clear():
             print("Obstacle ahead, jump")
             self.actions.append("jump")
             self.actions.append("right")
