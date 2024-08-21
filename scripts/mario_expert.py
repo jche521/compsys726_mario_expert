@@ -100,6 +100,11 @@ class MarioController(MarioEnvironment):
             for j in range(len(game_area[0])):
                 if game_area[i][j] == 1:
                     return i+2
+        return -1
+
+    def is_mario_jumping(self):
+        on_ground_flag = self._read_m(0xC20A)
+        return on_ground_flag == 0x00
 
     def run_action(self, action: str) -> None:
         """
@@ -146,8 +151,8 @@ class MarioExpert:
     def is_colliding(self, obj_pos: Coordinate) -> bool:
         mario_pos = self.environment.get_mario_pos()
         print(f"Checking collision: Mario({mario_pos.x}, {mario_pos.y}), Enemy({obj_pos.x}, {obj_pos.y})")
-        x_collision = abs(mario_pos.x - obj_pos.x) < 10  # Distance threshold
-        y_collision = abs(mario_pos.y - obj_pos.y) < 10  # Add y-check if necessary
+        x_collision = abs(mario_pos.x - obj_pos.x) < 35  # Distance threshold
+        y_collision = abs(mario_pos.y - obj_pos.y) < 20  # Add y-check if necessary
         return x_collision and y_collision
 
     def is_enemy_near(self):
@@ -176,6 +181,11 @@ class MarioExpert:
                 return False
         return True
 
+    def can_jump(self) -> bool:
+        if self.environment.is_mario_jumping(): # mario is in air, cannot jump
+            return False
+        # check up if theres enemy
+
     def choose_action(self):
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
@@ -193,9 +203,12 @@ class MarioExpert:
         # for all enemies that are near
         for enemy in self.enemies:
             if self.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
-                print("Collision detected with enemy.")
-                self.actions.append("jump")
-                self.past_enemies.append(enemy)
+                print(f"Collision detected with enemy {enemy.y}, {mario_y}")
+                if enemy.y > mario_y:
+                    self.actions.extend(["left", "left", "right", "jump", "right"])
+                else:
+                    self.actions.append("jump")
+                    self.past_enemies.append(enemy)
 
         # remove enemy that is already passed
         self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
