@@ -43,7 +43,7 @@ class MarioController(MarioEnvironment):
 
     def __init__(
             self,
-            act_freq: int = 10,
+            act_freq: int = 12,
             emulation_speed: int = 1,
             headless: bool = False,
     ) -> None:
@@ -63,6 +63,7 @@ class MarioController(MarioEnvironment):
             "up": WindowEvent.PRESS_ARROW_UP,
             "jump": WindowEvent.PRESS_BUTTON_A,
             "slide": WindowEvent.PRESS_BUTTON_B,
+            "speed": WindowEvent.RELEASE_SPEED_UP,
         }
 
         release_button: dict[str, WindowEvent] = {
@@ -72,6 +73,7 @@ class MarioController(MarioEnvironment):
             "up": WindowEvent.RELEASE_ARROW_UP,
             "jump": WindowEvent.RELEASE_BUTTON_A,
             "slide": WindowEvent.RELEASE_BUTTON_B,
+            "speed": WindowEvent.RELEASE_SPEED_UP,
         }
 
         self.valid_actions = valid_actions
@@ -104,6 +106,14 @@ class MarioController(MarioEnvironment):
                     return i+2
         return -1
 
+    def get_mario_in_game_area(self):
+        game_area = self.game_area()
+        for i in range(len(game_area)):
+            for j in range(len(game_area[0])):
+                if game_area[i][j] == 1:
+                    return Coordinate(j+1, i+1)
+        return -1
+
     def is_mario_jumping(self):
         on_ground_flag = self._read_m(0xC20A)
         return on_ground_flag == 0x00
@@ -114,8 +124,6 @@ class MarioController(MarioEnvironment):
         x_collision = abs(mario_pos.x - obj_pos.x) < 35  # Distance threshold
         y_collision = abs(mario_pos.y - obj_pos.y) < 20  # Add y-check if necessary
         return x_collision and y_collision
-
-
 
     def is_front_clear(self) -> bool:
         game_area = self.game_area()
@@ -136,7 +144,7 @@ class MarioController(MarioEnvironment):
         ground_y = self.get_ground_y()
         print("y:", ground_y)
         for i in range(1, 5):
-            if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][15] == 15:
+            if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][13] == 15:
                 return False
         return True
 
@@ -149,6 +157,42 @@ class MarioController(MarioEnvironment):
         if not self.is_up_clear():
             return False
         return True
+
+    # new stuff here
+    def is_obstacle_ahead_in_distance(self, distance) -> bool:
+        game_area = self.game_area()
+        mario_pos = self.get_mario_in_game_area()
+        if mario_pos == -1:
+            return False
+        for i in range(distance):
+            if game_area[mario_pos.y-1][mario_pos.x+i] == 10 or game_area[mario_pos.y][mario_pos.x+i] == 10 or game_area[mario_pos.y-1][mario_pos.x+i] == 14 or game_area[mario_pos.y][mario_pos.x+i] == 14:
+                return True
+        return False
+    def is_obstacle_ahead(self) -> bool:
+        game_area = self.game_area()
+        mario_pos = self.get_mario_in_game_area()
+        if mario_pos == -1:
+            return False
+        if game_area[mario_pos.y-1][mario_pos.x+3] == 10 or game_area[mario_pos.y][mario_pos.x+3] == 10 or game_area[mario_pos.y-1][mario_pos.x+2] == 14 or game_area[mario_pos.y][mario_pos.x+2] == 14:
+            return True
+        return False
+
+    def get_obstacle_height(self) -> int:
+        game_area = self.game_area()
+        mario_pos = self.get_mario_in_game_area()
+        height = 0
+        found_obstacle = False
+        for i in range(mario_pos.y, 0, -1):
+            for j in range(mario_pos.x, len(game_area[0])):
+                if game_area[i][j] == 10 or game_area[i][j] == 14:
+                    found_obstacle = True
+                    height += 1
+                    break
+
+                if not found_obstacle:
+                    print("height:", height)
+                    return height
+            found_obstacle = False
 
     def run_action(self, action: str) -> None:
         """
@@ -200,6 +244,21 @@ class MarioExpert:
                 print(enemy, pos)
                 self.enemies.append(pos)
 
+    def is_enemy_front(self, mario_pos: Coordinate, safety_distance: int):
+        for enemy in self.enemies:
+            print(mario_pos, enemy)
+            if abs(mario_pos.y - enemy.y) <= 2 and abs(mario_pos.x - enemy.x) <= safety_distance:
+                print(f"enemy at front {mario_pos}")
+                return True
+        return False
+
+    def is_enemy_up(self, mario_pos: Coordinate):
+        for enemy in self.enemies:
+            if enemy.y < mario_pos.y and enemy.x - mario_pos.x <= 40:
+                print(f"enemy at top {mario_pos}")
+                return True
+        return False
+
     def choose_action(self):
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
@@ -209,37 +268,61 @@ class MarioExpert:
         coord = self.environment.get_mario_pos()
         mario_x = self.environment.game_state()["x_position"]
         mario_y = coord.y
-        print("Mario position (x, y):", mario_x, mario_y)
+        print("Mario position (x, y):", coord.x, mario_y)
 
         # Store enemies pos if near
         self.is_enemy_near()
+        print(self.enemies)
+        if self.is_enemy_front(coord, 40):
+            self.actions.append("jump")
+        elif self.environment.is_obstacle_ahead_in_distance(5): # if there is obstacle ahead
 
-        # for all enemies that are near
-        for enemy in self.enemies:
-            if self.environment.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
-                print(f"Collision detected with enemy {enemy.y}, {mario_y}")
-                if enemy.y > mario_y:
-                    if not self.environment.can_jump():
-                        self.actions.extend(["left", "right", "jump", "right"])
-                    else:
-                        self.actions.append("jump")
+            if self.is_enemy_up(coord): # check if theres enemy at the top
+                print("enemy up")
+                self.actions.extend(["left", "left"])
+            elif self.environment.is_obstacle_ahead_in_distance(2): # when reach the obstacle
+                if self.environment.get_obstacle_height() > 3:
+                    print("obstacle too high")
+                    self.actions.extend(["left", "left", "right", "jump"])
                 else:
-                    self.actions.append("jump")
-                self.past_enemies.append(enemy)
-
-        # remove enemy that is already passed
-        self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
-
-        if not self.environment.is_front_clear():
-            print("Obstacle ahead, jump")
-            self.actions.append("jump")
-            self.actions.append("right")
-        elif self.environment.is_down_clear() and self.environment.get_ground_y() > 10:
-            self.actions.append("jump")
-            self.actions.append("right")
+                    print("obstacle jumpable")
+                    self.actions.extend(["jump", "right"])
+            else:
+                self.actions.append("right")
         else:
-            print("No collision, moving right.")
             self.actions.append("right")
+
+        self.enemies = []
+        # for all enemies that are near
+        # for enemy in self.enemies:
+        #     if self.environment.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
+        #         print(f"Collision detected with enemy {enemy.y}, {mario_y}")
+        #         if enemy.y > mario_y:
+        #             if not self.environment.can_jump():
+        #                 self.actions.extend(["left", "right", "jump", "right"])
+        #             else:
+        #                 self.actions.append("jump")
+        #         else:
+        #             self.actions.append("jump")
+        #         self.past_enemies.append(enemy)
+        #
+        # # remove enemy that is already passed
+        # self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
+        #
+        # if not self.environment.is_front_clear():
+        #     print("Obstacle ahead, jump")
+        #     self.actions.append("jump")
+        #     self.actions.append("right")
+        # elif self.environment.is_down_clear() and self.environment.get_ground_y() > 10:
+        #     self.actions.append("jump")
+        #     self.actions.append("right")
+        # else:
+        #     print("No collision, moving right.")
+        #     self.actions.append("right")
+
+
+
+
 
     def step(self):
         """
