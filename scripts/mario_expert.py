@@ -27,7 +27,7 @@ class Coordinate:
 class EnemyMap(Enum):
     GOOMBA = 0x00
     NOKOBON = 0x04
-    BAT = 0x42
+    BEE = 0x29
 
 
 class MarioController(MarioEnvironment):
@@ -261,9 +261,19 @@ class MarioExpert:
                 return True
         return False
 
-    def is_enemy_up(self, mario_pos: Coordinate):
+    def is_moving_enemy_front(self, mario_pos: Coordinate):
+        game_area = self.environment.game_area()
+        mario_pos = self.environment.get_mario_in_game_area()
+
+        for i in range(3):
+            for j in range(3):
+                if game_area[mario_pos.y-i][mario_pos.x + j] == 18:
+                    return True
+        return False
+
+    def is_enemy_up(self, mario_pos: Coordinate, safety_distance: int):
         for enemy in self.enemies:
-            if enemy.y < mario_pos.y and enemy.x - mario_pos.x <= 40:
+            if enemy.y < mario_pos.y and enemy.x - mario_pos.x <= safety_distance:
                 print(f"enemy at top {mario_pos}")
                 return True
         return False
@@ -285,7 +295,7 @@ class MarioExpert:
         if self.is_enemy_front(coord, 40):
             self.actions.append("jump")
         elif self.environment.is_obstacle_ahead_in_distance(4): # if there is obstacle ahead
-            if self.is_enemy_up(coord): # check if theres enemy at the top
+            if self.is_enemy_up(coord, 40): # check if theres enemy at the top
                 print("enemy up")
                 self.actions.extend(["left", "left"])
             elif self.environment.is_obstacle_ahead_in_distance(2): # when reach the obstacle
@@ -297,9 +307,13 @@ class MarioExpert:
                     self.actions.extend(["jump", "right"])
             else:
                 self.actions.append("right")
+        elif self.is_moving_enemy_front(coord):
+            print("beeeeeeeeeee")
+            self.actions.append("jump")
         elif self.environment.is_gap_ahead():
             print("gap_ahead")
             self.actions.append("jump")
+
         else:
             print("fuck")
             self.actions.append("right")
