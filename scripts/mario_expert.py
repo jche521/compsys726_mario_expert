@@ -27,6 +27,7 @@ class Coordinate:
 class EnemyMap(Enum):
     GOOMBA = 0x00
     NOKOBON = 0x04
+    BAT = 0x42
 
 
 class MarioController(MarioEnvironment):
@@ -177,6 +178,14 @@ class MarioController(MarioEnvironment):
             return True
         return False
 
+    def is_gap_ahead(self) -> bool:
+        game_area = self.game_area()
+        mario_pos = self.get_mario_in_game_area()
+        for i in range(3):
+            if game_area[15][mario_pos.x+i] == 0:
+                return True
+        return False
+
     def get_obstacle_height(self) -> int:
         game_area = self.game_area()
         mario_pos = self.get_mario_in_game_area()
@@ -247,7 +256,7 @@ class MarioExpert:
     def is_enemy_front(self, mario_pos: Coordinate, safety_distance: int):
         for enemy in self.enemies:
             print(mario_pos, enemy)
-            if abs(mario_pos.y - enemy.y) <= 2 and abs(mario_pos.x - enemy.x) <= safety_distance:
+            if abs(mario_pos.y - enemy.y) <= 5 and abs(mario_pos.x - enemy.x) <= safety_distance:
                 print(f"enemy at front {mario_pos}")
                 return True
         return False
@@ -275,8 +284,7 @@ class MarioExpert:
         print(self.enemies)
         if self.is_enemy_front(coord, 40):
             self.actions.append("jump")
-        elif self.environment.is_obstacle_ahead_in_distance(5): # if there is obstacle ahead
-
+        elif self.environment.is_obstacle_ahead_in_distance(4): # if there is obstacle ahead
             if self.is_enemy_up(coord): # check if theres enemy at the top
                 print("enemy up")
                 self.actions.extend(["left", "left"])
@@ -289,7 +297,11 @@ class MarioExpert:
                     self.actions.extend(["jump", "right"])
             else:
                 self.actions.append("right")
+        elif self.environment.is_gap_ahead():
+            print("gap_ahead")
+            self.actions.append("jump")
         else:
+            print("fuck")
             self.actions.append("right")
 
         self.enemies = []
