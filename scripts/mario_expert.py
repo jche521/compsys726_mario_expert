@@ -278,6 +278,17 @@ class MarioExpert:
                 return True
         return False
 
+    def is_enemy_below(self, mario_pos: Coordinate, safety_distance: int):
+
+        game_area = self.environment.game_area()
+        mario_pos = self.environment.get_mario_in_game_area()
+
+        for i in range(3):
+            for j in range(5):
+                if game_area[mario_pos.y+i][mario_pos.x + j] == 15:
+                    return True
+        return False
+
     def choose_action(self):
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
@@ -291,7 +302,7 @@ class MarioExpert:
 
         # Store enemies pos if near
         self.is_enemy_near()
-        print(self.enemies)
+        print("enemies:  ", self.enemies)
         if self.is_enemy_front(coord, 40):
             self.actions.append("jump")
         elif self.environment.is_obstacle_ahead_in_distance(4): # if there is obstacle ahead
@@ -309,11 +320,13 @@ class MarioExpert:
                 self.actions.append("right")
         elif self.is_moving_enemy_front(coord):
             print("beeeeeeeeeee")
-            self.actions.append("jump")
+            self.actions.extend(["jump", "right"])
         elif self.environment.is_gap_ahead():
             print("gap_ahead")
-            self.actions.append("jump")
-
+            self.actions.extend(["jump", "right"])
+        elif self.is_enemy_below(coord, 50):
+            print("smt belowww")
+            self.actions.extend(["jump", "right"])
         else:
             print("fuck")
             self.actions.append("right")
