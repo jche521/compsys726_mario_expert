@@ -278,8 +278,7 @@ class MarioExpert:
                 return True
         return False
 
-    def is_enemy_below(self, mario_pos: Coordinate, safety_distance: int):
-
+    def is_enemy_below(self):
         game_area = self.environment.game_area()
         mario_pos = self.environment.get_mario_in_game_area()
 
@@ -289,6 +288,23 @@ class MarioExpert:
                     return True
         return False
 
+    def is_jumpable_block_ahead(self):
+        game_area = self.environment.game_area()
+        mario_pos = self.environment.get_mario_in_game_area()
+
+        if game_area[mario_pos.y-3][mario_pos.x + 3] == 13 or game_area[mario_pos.y-4][mario_pos.x + 3] == 13 or game_area[mario_pos.y-3][mario_pos.x + 3] == 12 or game_area[mario_pos.y-4][mario_pos.x + 3] == 12 or game_area[mario_pos.y-3][mario_pos.x + 3] == 10 or game_area[mario_pos.y-4][mario_pos.x + 3] == 10:
+            return True
+        return False
+
+    def is_block_ending(self):
+        game_area = self.environment.game_area()
+        mario_pos = self.environment.get_mario_in_game_area()
+
+        if game_area[mario_pos.y+1][mario_pos.x + 1] == 0:
+            return True
+        return False
+
+    above_ground = False
     def choose_action(self):
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
@@ -300,11 +316,17 @@ class MarioExpert:
         mario_y = coord.y
         print("Mario position (x, y):", coord.x, mario_y)
 
+
         # Store enemies pos if near
         self.is_enemy_near()
         print("enemies:  ", self.enemies)
         if self.is_enemy_front(coord, 40):
             self.actions.append("jump")
+        # elif self.is_jumpable_block_ahead():
+        #     self.actions.extend(["jump", "right"])
+        #     self.above_ground = True
+        # elif self.above_ground and self.is_block_ending():
+        #     self.actions.extend(["jump", "right"])
         elif self.environment.is_obstacle_ahead_in_distance(4): # if there is obstacle ahead
             if self.is_enemy_up(coord, 40): # check if theres enemy at the top
                 print("enemy up")
@@ -324,7 +346,7 @@ class MarioExpert:
         elif self.environment.is_gap_ahead():
             print("gap_ahead")
             self.actions.extend(["jump", "right"])
-        elif self.is_enemy_below(coord, 50):
+        elif self.is_enemy_below():
             print("smt belowww")
             self.actions.extend(["jump", "right"])
         else:
@@ -391,7 +413,6 @@ class MarioExpert:
         while not self.environment.get_game_over():
             frame = self.environment.grab_frame()
             self.video.write(frame)
-
             self.step()
 
         final_stats = self.environment.game_state()
