@@ -354,7 +354,7 @@ class MarioExpert:
                 self.actions.append("right")
                 tick_count = 15
         elif self.is_moving_enemy_front(coord):
-            print("beeeeeeeeeee")
+            print("bee")
             self.actions.extend(["jump"])
             tick_count = 15
         elif self.environment.is_gap_ahead():
@@ -362,7 +362,7 @@ class MarioExpert:
             self.actions.extend(["jump"])
             tick_count = 15
         elif self.is_enemy_below():
-            print("smt belowww")
+            print("smt below")
             self.actions.extend(["jump"])
             tick_count = 15
         else:
@@ -372,37 +372,6 @@ class MarioExpert:
 
         self.enemies = []
         return tick_count
-
-        # for all enemies that are near
-        # for enemy in self.enemies:
-        #     if self.environment.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
-        #         print(f"Collision detected with enemy {enemy.y}, {mario_y}")
-        #         if enemy.y > mario_y:
-        #             if not self.environment.can_jump():
-        #                 self.actions.extend(["left", "right", "jump", "right"])
-        #             else:
-        #                 self.actions.append("jump")
-        #         else:
-        #             self.actions.append("jump")
-        #         self.past_enemies.append(enemy)
-        #
-        # # remove enemy that is already passed
-        # self.enemies = [enemy for enemy in self.enemies if enemy not in self.past_enemies]
-        #
-        # if not self.environment.is_front_clear():
-        #     print("Obstacle ahead, jump")
-        #     self.actions.append("jump")
-        #     self.actions.append("right")
-        # elif self.environment.is_down_clear() and self.environment.get_ground_y() > 10:
-        #     self.actions.append("jump")
-        #     self.actions.append("right")
-        # else:
-        #     print("No collision, moving right.")
-        #     self.actions.append("right")
-
-
-
-
 
     def step(self):
         """
