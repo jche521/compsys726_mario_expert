@@ -273,8 +273,8 @@ class MarioExpert:
         game_area = self.environment.game_area()
         mario_pos = self.environment.get_mario_in_game_area()
 
-        for i in range(-2, 2):
-            for j in range(2,9):
+        for i in range(-2, 4):
+            for j in range(2, 9):
                 if game_area[mario_pos.y-i][mario_pos.x + j] == 18:
                     return True
         return False
@@ -317,9 +317,11 @@ class MarioExpert:
             return False
         mario_speed = x - self.prevX
         game_area = self.environment.game_area()
-        if game_area[y][x+7] == 0 or game_area[y][x+4] == 0 or game_area[y][x+5] == 0 or game_area[y][x+6] == 0:
-            return True
-        return False
+        print(f"is jump safe {game_area[y][x+3]} {game_area[y][x+4]} {game_area[y][x+5]} {game_area[y][x+6]} {game_area[y][x+7]} {game_area[y][x+8]}")
+
+        if game_area[y][x+7] == 15 or game_area[y][x+8] == 15 or game_area[y][x+6] == 15:
+            return False
+        return True
 
     above_ground = False
     prevX = -1
@@ -347,9 +349,11 @@ class MarioExpert:
         elif self.is_moving_enemy_front(coord) :
             print("bee")
             if self.is_jump_safe(coord_ingame.x, coord_ingame.y):
+                print("bee jump safe")
                 self.actions.extend(["jump"])
                 tick_count = 15
             else:
+                print("bee jump not safe")
                 self.actions.append("left")
                 tick_count = 30
         elif self.is_jumpable_block_ahead():
@@ -374,9 +378,13 @@ class MarioExpert:
                 else:
                     print("obstacle jumpable")
                     if self.is_jump_safe(coord_ingame.x, coord_ingame.y):
+                        print("obstacle jump safe")
+
                         self.actions.extend(["jump", "right"])
                         tick_count = 30
                     else:
+                        print("obstacle jump not safe")
+
                         self.actions.append("left")
                         tick_count = 10
             else:
