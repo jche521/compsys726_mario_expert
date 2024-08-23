@@ -214,13 +214,19 @@ class MarioController(MarioEnvironment):
         if tick_count is None:
             tick_count = self.act_freq
 
+
+
         # Simply toggles the buttons being on or off for a duration of act_freq
         self.pyboy.send_input(self.valid_actions[action])
+        if action == "jump":
+            self.pyboy.send_input(self.valid_actions["right"])
 
         for _ in range(tick_count):
             self.pyboy.tick()
 
         self.pyboy.send_input(self.release_button[action])
+        if action == "jump":
+            self.pyboy.send_input(self.valid_actions["right"])
 
 class MarioExpert:
     """
@@ -333,13 +339,13 @@ class MarioExpert:
         elif self.environment.is_obstacle_ahead_in_distance(4): # if there is obstacle ahead
             if self.is_enemy_up(coord, 40): # check if theres enemy at the top
                 print("enemy up")
-                self.actions.extend(["left", "left"])
-                tick_count = 15
+                self.actions.append("left")
+                tick_count = 30
             elif self.environment.is_obstacle_ahead_in_distance(2): # when reach the obstacle
                 if self.environment.get_obstacle_height() > 3:
                     print("obstacle too high")
-                    self.actions.extend(["left", "left", "right", "jump"])
-                    tick_count = 15
+                    self.actions.append("left")
+                    tick_count = 30
                 else:
                     print("obstacle jumpable")
                     self.actions.extend(["jump", "right"])
@@ -349,15 +355,15 @@ class MarioExpert:
                 tick_count = 15
         elif self.is_moving_enemy_front(coord):
             print("beeeeeeeeeee")
-            self.actions.extend(["jump", "right"])
+            self.actions.extend(["jump"])
             tick_count = 15
         elif self.environment.is_gap_ahead():
             print("gap_ahead")
-            self.actions.extend(["jump", "right"])
+            self.actions.extend(["jump"])
             tick_count = 15
         elif self.is_enemy_below():
             print("smt belowww")
-            self.actions.extend(["jump", "right"])
+            self.actions.extend(["jump"])
             tick_count = 15
         else:
             print("fuck")
