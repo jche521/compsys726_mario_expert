@@ -263,7 +263,7 @@ class MarioExpert:
     def is_enemy_front(self, mario_pos: Coordinate, safety_distance: int):
         for enemy in self.enemies:
             print(mario_pos, enemy)
-            if abs(mario_pos.y - enemy.y) <= 5 and abs(mario_pos.x - enemy.x) <= safety_distance:
+            if abs(mario_pos.y - enemy.y) <= 5 and safety_distance >= enemy.x - mario_pos.x > 0:
                 print(f"enemy at front {mario_pos}")
                 return True
         return False
@@ -272,8 +272,8 @@ class MarioExpert:
         game_area = self.environment.game_area()
         mario_pos = self.environment.get_mario_in_game_area()
 
-        for i in range(3):
-            for j in range(3):
+        for i in range(-2, 2):
+            for j in range(2,9):
                 if game_area[mario_pos.y-i][mario_pos.x + j] == 18:
                     return True
         return False
@@ -299,7 +299,7 @@ class MarioExpert:
         game_area = self.environment.game_area()
         mario_pos = self.environment.get_mario_in_game_area()
 
-        if game_area[mario_pos.y-3][mario_pos.x + 3] == 13 or game_area[mario_pos.y-4][mario_pos.x + 3] == 13 or game_area[mario_pos.y-3][mario_pos.x + 3] == 12 or game_area[mario_pos.y-4][mario_pos.x + 3] == 12 or game_area[mario_pos.y-3][mario_pos.x + 3] == 10 or game_area[mario_pos.y-4][mario_pos.x + 3] == 10:
+        if game_area[mario_pos.y-3][mario_pos.x + 4] == 13 or game_area[mario_pos.y-4][mario_pos.x + 3] == 13 or game_area[mario_pos.y-3][mario_pos.x + 4] == 12 or game_area[mario_pos.y-4][mario_pos.x + 3] == 12 or game_area[mario_pos.y-3][mario_pos.x + 4] == 10 or game_area[mario_pos.y-4][mario_pos.x + 3] == 10:
             return True
         return False
 
@@ -307,7 +307,7 @@ class MarioExpert:
         game_area = self.environment.game_area()
         mario_pos = self.environment.get_mario_in_game_area()
 
-        if game_area[mario_pos.y+1][mario_pos.x + 1] == 0:
+        if game_area[mario_pos.y+1][mario_pos.x + 2] == 0 or game_area[mario_pos.y+1][mario_pos.x + 1] == 0 or game_area[mario_pos.y+1][mario_pos.x ] == 0:
             return True
         return False
 
@@ -331,11 +331,19 @@ class MarioExpert:
         if self.is_enemy_front(coord, 40):
             self.actions.append("jump")
             tick_count = 15
-        # elif self.is_jumpable_block_ahead():
-        #     self.actions.extend(["jump", "right"])
-        #     self.above_ground = True
-        # elif self.above_ground and self.is_block_ending():
-        #     self.actions.extend(["jump", "right"])
+        elif self.is_moving_enemy_front(coord):
+            print("bee")
+            self.actions.extend(["jump"])
+            tick_count = 15
+        elif self.is_jumpable_block_ahead():
+            print("on block")
+            self.actions.extend(["jump"])
+            self.above_ground = True
+            tick_count = 15
+        elif self.above_ground and self.is_block_ending():
+            print("off block")
+            self.actions.append("jump")
+            tick_count = 15
         elif self.environment.is_obstacle_ahead_in_distance(4): # if there is obstacle ahead
             if self.is_enemy_up(coord, 40): # check if theres enemy at the top
                 print("enemy up")
@@ -349,14 +357,11 @@ class MarioExpert:
                 else:
                     print("obstacle jumpable")
                     self.actions.extend(["jump", "right"])
-                    tick_count = 15
+                    tick_count = 30
             else:
                 self.actions.append("right")
                 tick_count = 15
-        elif self.is_moving_enemy_front(coord):
-            print("bee")
-            self.actions.extend(["jump"])
-            tick_count = 15
+
         elif self.environment.is_gap_ahead():
             print("gap_ahead")
             self.actions.extend(["jump"])
