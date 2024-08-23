@@ -8,8 +8,6 @@ Original Mario Manual: https://www.thegameisafootarcade.com/wp-content/uploads/2
 
 import json
 import logging
-import random
-from argparse import Action
 from enum import Enum
 
 import cv2
@@ -17,18 +15,15 @@ from mario_environment import MarioEnvironment
 from pyboy.utils import WindowEvent
 from dataclasses import dataclass
 
-
 @dataclass
 class Coordinate:
     x: int
     y: int
 
-
 class EnemyMap(Enum):
     GOOMBA = 0x00
     NOKOBON = 0x04
     BEE = 0x29
-
 
 class MarioController(MarioEnvironment):
     """
@@ -119,27 +114,6 @@ class MarioController(MarioEnvironment):
         on_ground_flag = self._read_m(0xC20A)
         return on_ground_flag == 0x00
 
-    def is_colliding(self, obj_pos: Coordinate) -> bool:
-        mario_pos = self.get_mario_pos()
-        print(f"Checking collision: Mario({mario_pos.x}, {mario_pos.y}), Enemy({obj_pos.x}, {obj_pos.y})")
-        x_collision = abs(mario_pos.x - obj_pos.x) < 35  # Distance threshold
-        y_collision = abs(mario_pos.y - obj_pos.y) < 20  # Add y-check if necessary
-        return x_collision and y_collision
-
-    def is_front_clear(self) -> bool:
-        game_area = self.game_area()
-        ground_y = self.get_ground_y()
-        print("y:", ground_y)
-        if game_area[ground_y-1][11] != 0 or game_area[ground_y-2][11] != 0:
-            return False
-        return True
-
-    def is_down_clear(self) -> bool:
-        game_area = self.game_area()
-        if game_area[15][10] == 0:
-            return True
-        return False
-
     def is_up_clear(self) -> bool:
         game_area = self.game_area()
         ground_y = self.get_ground_y()
@@ -169,14 +143,6 @@ class MarioController(MarioEnvironment):
             if game_area[mario_pos.y-1][mario_pos.x+i] == 10 or game_area[mario_pos.y][mario_pos.x+i] == 10 or game_area[mario_pos.y-1][mario_pos.x+i] == 14 or game_area[mario_pos.y][mario_pos.x+i] == 14:
                 return True
         return False
-    def is_obstacle_ahead(self) -> bool:
-        game_area = self.game_area()
-        mario_pos = self.get_mario_in_game_area()
-        if mario_pos == -1:
-            return False
-        if game_area[mario_pos.y-1][mario_pos.x+3] == 10 or game_area[mario_pos.y][mario_pos.x+3] == 10 or game_area[mario_pos.y-1][mario_pos.x+2] == 14 or game_area[mario_pos.y][mario_pos.x+2] == 14:
-            return True
-        return False
 
     def is_gap_ahead(self) -> bool:
         game_area = self.game_area()
@@ -203,7 +169,6 @@ class MarioController(MarioEnvironment):
                     return height
             found_obstacle = False
 
-
     def run_action(self, action: str, tick_count = None) -> None:
         """
         This is a very basic example of how this function could be implemented
@@ -214,8 +179,6 @@ class MarioController(MarioEnvironment):
         """
         if tick_count is None:
             tick_count = self.act_freq
-
-
 
         # Simply toggles the buttons being on or off for a duration of act_freq
         self.pyboy.send_input(self.valid_actions[action])
@@ -244,13 +207,13 @@ class MarioExpert:
 
     actions = []
     enemies = []
-    past_enemies = []
+    above_ground = False
+    stuck = False
+    prevX = -1
 
     def __init__(self, results_path: str, headless=False):
         self.results_path = results_path
-
         self.environment = MarioController(headless=headless)
-
         self.video = None
 
     def is_enemy_near(self):
@@ -332,7 +295,6 @@ class MarioExpert:
     def is_jump_safe(self, x,y):
         if not self.environment.can_jump():
             return False
-        mario_speed = x - self.prevX
         game_area = self.environment.game_area()
         print(f"is jump safe {game_area[y][x+3]} {game_area[y][x+4]} {game_area[y][x+5]} {game_area[y][x+6]} {game_area[y][x+7]} {game_area[y][x+8]}")
 
@@ -340,20 +302,14 @@ class MarioExpert:
             return False
         return True
 
-    above_ground = False
-    stuck = False
-    prevX = -1
     def choose_action(self):
         frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
 
-
         # Get Mario's position
         coord = self.environment.get_mario_pos()
         mario_x = self.environment.game_state()["x_position"]
-        mario_y = coord.y
         coord_ingame = self.environment.get_mario_in_game_area()
-        print("Mario position (x, y):", coord.x, mario_y, coord_ingame.x, coord_ingame.y)
 
         tick_count = None
 
