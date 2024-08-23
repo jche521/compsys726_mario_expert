@@ -203,7 +203,7 @@ class MarioController(MarioEnvironment):
                     return height
             found_obstacle = False
 
-    def run_action(self, action: str) -> None:
+    def run_action(self, action: str, tick_count = None) -> None:
         """
         This is a very basic example of how this function could be implemented
 
@@ -211,15 +211,16 @@ class MarioController(MarioEnvironment):
 
         You can change the action type to whatever you want or need just remember the base control of the game is pushing buttons
         """
+        if tick_count is None:
+            tick_count = self.act_freq
 
         # Simply toggles the buttons being on or off for a duration of act_freq
         self.pyboy.send_input(self.valid_actions[action])
 
-        for _ in range(self.act_freq):
+        for _ in range(tick_count):
             self.pyboy.tick()
 
         self.pyboy.send_input(self.release_button[action])
-
 
 class MarioExpert:
     """
@@ -316,12 +317,14 @@ class MarioExpert:
         mario_y = coord.y
         print("Mario position (x, y):", coord.x, mario_y)
 
+        tick_count = None
 
         # Store enemies pos if near
         self.is_enemy_near()
         print("enemies:  ", self.enemies)
         if self.is_enemy_front(coord, 40):
             self.actions.append("jump")
+            tick_count = 15
         # elif self.is_jumpable_block_ahead():
         #     self.actions.extend(["jump", "right"])
         #     self.above_ground = True
@@ -331,29 +334,39 @@ class MarioExpert:
             if self.is_enemy_up(coord, 40): # check if theres enemy at the top
                 print("enemy up")
                 self.actions.extend(["left", "left"])
+                tick_count = 15
             elif self.environment.is_obstacle_ahead_in_distance(2): # when reach the obstacle
                 if self.environment.get_obstacle_height() > 3:
                     print("obstacle too high")
                     self.actions.extend(["left", "left", "right", "jump"])
+                    tick_count = 15
                 else:
                     print("obstacle jumpable")
                     self.actions.extend(["jump", "right"])
+                    tick_count = 15
             else:
                 self.actions.append("right")
+                tick_count = 15
         elif self.is_moving_enemy_front(coord):
             print("beeeeeeeeeee")
             self.actions.extend(["jump", "right"])
+            tick_count = 15
         elif self.environment.is_gap_ahead():
             print("gap_ahead")
             self.actions.extend(["jump", "right"])
+            tick_count = 15
         elif self.is_enemy_below():
             print("smt belowww")
             self.actions.extend(["jump", "right"])
+            tick_count = 15
         else:
             print("fuck")
             self.actions.append("right")
+            tick_count = 15
 
         self.enemies = []
+        return tick_count
+
         # for all enemies that are near
         # for enemy in self.enemies:
         #     if self.environment.is_colliding(Coordinate(enemy.x, enemy.y)):  # check if enemy will collide with mario
@@ -391,13 +404,13 @@ class MarioExpert:
 
         This is just a very basic example
         """
-
+        tick_count = None
         # Choose an action - button press or other...
         if len(self.actions) == 0:
-            self.choose_action()
+            tick_count = self.choose_action()
         else:
             print(self.actions)
-            self.environment.run_action(self.actions.pop(0))
+            self.environment.run_action(self.actions.pop(0), tick_count)
 
     def play(self):
         """
