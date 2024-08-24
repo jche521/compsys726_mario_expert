@@ -15,18 +15,15 @@ from mario_environment import MarioEnvironment
 from pyboy.utils import WindowEvent
 from dataclasses import dataclass
 
-
 @dataclass
 class Coordinate:
     x: int
     y: int
 
-
 class EnemyMap(Enum):
     GOOMBA = 0x00
     NOKOBON = 0x04
     BEE = 0x29
-
 
 class MarioController(MarioEnvironment):
     """
@@ -120,7 +117,6 @@ class MarioController(MarioEnvironment):
     def is_up_clear(self) -> bool:
         game_area = self.game_area()
         ground_y = self.get_ground_y()
-        print("y:", ground_y)
         for i in range(1, 5):
             if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][13] == 15:
                 return False
@@ -169,7 +165,6 @@ class MarioController(MarioEnvironment):
                     break
 
                 if not found_obstacle:
-                    print("height:", height)
                     return height
             found_obstacle = False
 
@@ -234,7 +229,6 @@ class MarioExpert:
         for enemy in self.enemies:
             print(mario_pos, enemy)
             if abs(mario_pos.y - enemy.y) <= 5 and safety_distance >= enemy.x - mario_pos.x > 0:
-                print(f"enemy at front {mario_pos}")
                 return True
         return False
 
@@ -248,7 +242,6 @@ class MarioExpert:
     def is_enemy_up(self, mario_pos: Coordinate, safety_distance: int):
         for enemy in self.enemies:
             if enemy.y < mario_pos.y and enemy.x - mario_pos.x <= safety_distance:
-                print(f"enemy at top {mario_pos}")
                 return True
         return False
 
@@ -270,7 +263,6 @@ class MarioExpert:
         return False
 
     def is_stair(self, game_area, mario_pos):
-        print(f" stair? {game_area[mario_pos.y - 1][mario_pos.x + 1]} {game_area[mario_pos.y + 1][mario_pos.x + 1]}")
         if game_area[mario_pos.y - 1][mario_pos.x + 1] == 10:
             return True
         return False
@@ -298,7 +290,6 @@ class MarioExpert:
         return True
 
     def choose_action(self):
-        frame = self.environment.grab_frame()
         game_area = self.environment.game_area()
 
         # Get Mario's position
@@ -341,12 +332,12 @@ class MarioExpert:
             print("off block")
             self.actions.append("jump")
             tick_count = 20
-        elif self.environment.is_obstacle_ahead_in_distance(4):  # if there is obstacle ahead
-            if self.is_enemy_up(coord, 40):  # check if theres enemy at the top
+        elif self.environment.is_obstacle_ahead_in_distance(4):
+            if self.is_enemy_up(coord, 40):
                 print("enemy up")
                 self.actions.append("left")
                 tick_count = 30
-            elif self.environment.is_obstacle_ahead_in_distance(3):  # when reach the obstacle
+            elif self.environment.is_obstacle_ahead_in_distance(3):
                 if self.environment.get_obstacle_height() > 3:
                     print("obstacle too high")
                     self.actions.append("left")
@@ -370,7 +361,7 @@ class MarioExpert:
             tick_count = 15
 
         elif self.environment.is_gap_ahead():
-            print("gap_ahead")
+            print("gap ahead")
             self.actions.extend(["jump"])
             tick_count = 50
         elif self.is_enemy_below(game_area, mario_pos):
@@ -379,7 +370,7 @@ class MarioExpert:
             tick_count = 15
 
         else:
-            print("fuck")
+            print("clear ahead")
             self.actions.append("right")
             tick_count = 15
 
