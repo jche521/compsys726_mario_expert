@@ -114,60 +114,6 @@ class MarioController(MarioEnvironment):
         on_ground_flag = self._read_m(0xC20A)
         return on_ground_flag == 0x00
 
-    def is_up_clear(self) -> bool:
-        game_area = self.game_area()
-        ground_y = self.get_ground_y()
-        for i in range(1, 5):
-            if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][13] == 15:
-                return False
-        return True
-
-    def can_jump(self) -> bool:
-        game_area = self.game_area()
-
-        if self.is_mario_jumping():  # mario is in air, cannot jump
-            return False
-        # check up if theres enemy
-        if not self.is_up_clear():
-            return False
-        return True
-
-    # new stuff here
-    def is_obstacle_ahead_in_distance(self, distance) -> bool:
-        game_area = self.game_area()
-        mario_pos = self.get_mario_in_game_area()
-        if mario_pos == -1:
-            return False
-        for i in range(distance):
-            if game_area[mario_pos.y - 1][mario_pos.x + i] == 10 or game_area[mario_pos.y][mario_pos.x + i] == 10 or \
-                    game_area[mario_pos.y - 1][mario_pos.x + i] == 14 or game_area[mario_pos.y][mario_pos.x + i] == 14:
-                return True
-        return False
-
-    def is_gap_ahead(self) -> bool:
-        game_area = self.game_area()
-        mario_pos = self.get_mario_in_game_area()
-        for i in range(3):
-            if game_area[15][mario_pos.x + i] == 0:
-                return True
-        return False
-
-    def get_obstacle_height(self) -> int:
-        game_area = self.game_area()
-        mario_pos = self.get_mario_in_game_area()
-        height = 0
-        found_obstacle = False
-        for i in range(mario_pos.y, 0, -1):
-            for j in range(mario_pos.x, len(game_area[0])):
-                if game_area[i][j] == 10 or game_area[i][j] == 14:
-                    found_obstacle = True
-                    height += 1
-                    break
-
-                if not found_obstacle:
-                    return height
-            found_obstacle = False
-
     def run_action(self, action: str, tick_count=None) -> None:
         """
         This is a very basic example of how this function could be implemented
@@ -190,7 +136,6 @@ class MarioController(MarioEnvironment):
         self.pyboy.send_input(self.release_button[action])
         if action == "jump":
             self.pyboy.send_input(self.valid_actions["right"])
-
 
 class MarioExpert:
     """
@@ -253,7 +198,7 @@ class MarioExpert:
         return False
 
     def is_jumpable_block_ahead(self, game_area, mario_pos):
-        if not self.environment.can_jump():
+        if not self.can_jump(game_area, mario_pos):
             return False
         if game_area[mario_pos.y - 3][mario_pos.x + 4] == 13 or game_area[mario_pos.y - 4][mario_pos.x + 3] == 13 or \
                 game_area[mario_pos.y - 3][mario_pos.x + 4] == 12 or game_area[mario_pos.y - 4][
@@ -268,7 +213,7 @@ class MarioExpert:
         return False
 
     def is_stuck(self, game_area, mario_pos):
-        if not self.environment.can_jump():
+        if not self.can_jump(game_area, mario_pos):
             return False
         if game_area[mario_pos.y - 1][mario_pos.x + 1] == 10 and game_area[mario_pos.y + 1][mario_pos.x + 1] == 10 and \
                 game_area[mario_pos.y][mario_pos.x + 7] == 10:
@@ -282,12 +227,55 @@ class MarioExpert:
         return False
 
     def is_jump_safe(self, game_area, mario_pos):
-        if not self.environment.can_jump():
+        if not self.can_jump(game_area, mario_pos):
             return False
 
         if game_area[mario_pos.y][mario_pos.x + 7] == 15 or game_area[mario_pos.y][mario_pos.x + 8] == 15 or game_area[mario_pos.y][mario_pos.x + 6] == 15:
             return False
         return True
+
+    def is_up_clear(self, game_area, mario_pos) -> bool:
+        ground_y = mario_pos.y - 2
+        for i in range(1, 5):
+            if game_area[ground_y - i][14] == 15 or game_area[ground_y - i][13] == 15:
+                return False
+        return True
+
+    def can_jump(self, game_area, mario_pos) -> bool:
+        if self.environment.is_mario_jumping():  # mario is in air, cannot jump
+            return False
+        if not self.is_up_clear(game_area, mario_pos):
+            return False
+        return True
+
+    def is_obstacle_ahead_in_distance(self, game_area, mario_pos, distance) -> bool:
+        if mario_pos == -1:
+            return False
+        for i in range(distance):
+            if game_area[mario_pos.y - 1][mario_pos.x + i] == 10 or game_area[mario_pos.y][mario_pos.x + i] == 10 or \
+                    game_area[mario_pos.y - 1][mario_pos.x + i] == 14 or game_area[mario_pos.y][mario_pos.x + i] == 14:
+                return True
+        return False
+
+    def is_gap_ahead(self, game_area, mario_pos) -> bool:
+        for i in range(3):
+            if game_area[15][mario_pos.x + i] == 0:
+                return True
+        return False
+
+    def get_obstacle_height(self, game_area, mario_pos) -> int:
+        height = 0
+        found_obstacle = False
+        for i in range(mario_pos.y, 0, -1):
+            for j in range(mario_pos.x, len(game_area[0])):
+                if game_area[i][j] == 10 or game_area[i][j] == 14:
+                    found_obstacle = True
+                    height += 1
+                    break
+
+                if not found_obstacle:
+                    return height
+            found_obstacle = False
 
     def choose_action(self):
         game_area = self.environment.game_area()
@@ -302,6 +290,7 @@ class MarioExpert:
         # Store enemies pos if near
         self.is_enemy_near()
         print(game_area)
+        print("mario_x", mario_x)
         print("enemies:  ", self.enemies)
 
         if mario_x >= 2450:
@@ -327,18 +316,17 @@ class MarioExpert:
                 print("bee jump not safe")
                 self.actions.append("left")
                 tick_count = 30
-
         elif self.above_ground and self.is_block_ending(game_area, mario_pos):
             print("off block")
             self.actions.append("jump")
             tick_count = 20
-        elif self.environment.is_obstacle_ahead_in_distance(4):
+        elif self.is_obstacle_ahead_in_distance(game_area, mario_pos, 4):
             if self.is_enemy_up(coord, 40):
                 print("enemy up")
                 self.actions.append("left")
                 tick_count = 30
-            elif self.environment.is_obstacle_ahead_in_distance(3):
-                if self.environment.get_obstacle_height() > 3:
+            elif self.is_obstacle_ahead_in_distance(game_area, mario_pos,3):
+                if self.get_obstacle_height(game_area, mario_pos) > 3:
                     print("obstacle too high")
                     self.actions.append("left")
                     tick_count = 30
@@ -359,8 +347,7 @@ class MarioExpert:
             self.actions.extend(["jump"])
             self.above_ground = True
             tick_count = 15
-
-        elif self.environment.is_gap_ahead():
+        elif self.is_gap_ahead(game_area, mario_pos):
             print("gap ahead")
             self.actions.extend(["jump"])
             tick_count = 50
@@ -368,7 +355,6 @@ class MarioExpert:
             print("smt below")
             self.actions.extend(["jump"])
             tick_count = 15
-
         else:
             print("clear ahead")
             self.actions.append("right")
