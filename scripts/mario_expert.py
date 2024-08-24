@@ -262,8 +262,6 @@ class MarioExpert:
     def is_jumpable_block_ahead(self, game_area, mario_pos):
         if not self.environment.can_jump():
             return False
-        print(
-            f"is jumpable?: {game_area[mario_pos.y - 3][mario_pos.x + 4]} {game_area[mario_pos.y - 4][mario_pos.x + 3]}")
         if game_area[mario_pos.y - 3][mario_pos.x + 4] == 13 or game_area[mario_pos.y - 4][mario_pos.x + 3] == 13 or \
                 game_area[mario_pos.y - 3][mario_pos.x + 4] == 12 or game_area[mario_pos.y - 4][
             mario_pos.x + 3] == 12 or game_area[mario_pos.y - 3][mario_pos.x + 4] == 10 or game_area[mario_pos.y - 4][
@@ -280,7 +278,6 @@ class MarioExpert:
     def is_stuck(self, game_area, mario_pos):
         if not self.environment.can_jump():
             return False
-        print(f" stuck? {game_area[mario_pos.y - 1][mario_pos.x + 1]} {game_area[mario_pos.y + 1][mario_pos.x + 1]}")
         if game_area[mario_pos.y - 1][mario_pos.x + 1] == 10 and game_area[mario_pos.y + 1][mario_pos.x + 1] == 10 and \
                 game_area[mario_pos.y][mario_pos.x + 7] == 10:
             return True
@@ -349,7 +346,7 @@ class MarioExpert:
                 print("enemy up")
                 self.actions.append("left")
                 tick_count = 30
-            elif self.environment.is_obstacle_ahead_in_distance(2):  # when reach the obstacle
+            elif self.environment.is_obstacle_ahead_in_distance(3):  # when reach the obstacle
                 if self.environment.get_obstacle_height() > 3:
                     print("obstacle too high")
                     self.actions.append("left")
