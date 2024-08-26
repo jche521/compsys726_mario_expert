@@ -243,7 +243,7 @@ class MarioExpert:
         return False
 
     def is_gap_ahead(self, game_area, mario_pos) -> bool:
-        for i in range(3):
+        for i in range(1,4):
             if game_area[15][mario_pos.x + i] == 0:
                 return True
         return False
@@ -251,10 +251,14 @@ class MarioExpert:
     def is_jumpable_block_ahead(self, game_area, mario_pos):
         if not self.environment.can_jump():
             return False
-        if game_area[mario_pos.y - 3][mario_pos.x + 4] == 13 or game_area[mario_pos.y - 4][mario_pos.x + 3] == 13 or \
-                game_area[mario_pos.y - 3][mario_pos.x + 4] == 12 or game_area[mario_pos.y - 4][
-            mario_pos.x + 3] == 12 or game_area[mario_pos.y - 3][mario_pos.x + 4] == 10 or game_area[mario_pos.y - 4][
-            mario_pos.x + 3] == 10 or game_area[mario_pos.y - 2][mario_pos.x + 3] == 10:
+        print(f"{game_area[mario_pos.y - 3][mario_pos.x + 4]} {game_area[mario_pos.y - 4][mario_pos.x + 3]} {game_area[mario_pos.y - 2][mario_pos.x + 3]}")
+        if (game_area[mario_pos.y - 3][mario_pos.x + 4] == 13 or
+                game_area[mario_pos.y - 4][mario_pos.x + 3] == 13 or
+                game_area[mario_pos.y - 3][mario_pos.x + 4] == 12 or
+                game_area[mario_pos.y - 4][mario_pos.x + 3] == 12 or
+                game_area[mario_pos.y - 3][mario_pos.x + 4] == 10 or
+                game_area[mario_pos.y - 4][mario_pos.x + 3] == 10 or
+                game_area[mario_pos.y - 2][mario_pos.x + 3] == 10):
             return True
         return False
 
@@ -314,7 +318,7 @@ class MarioExpert:
             print("stuck")
             tick_count = 30
             self.stuck = True
-        elif self.is_moving_enemy_front(game_area, mario_pos):
+        elif self.environment.game_state()["stage"] == 1 and self.is_moving_enemy_front(game_area, mario_pos):
             if self.is_jump_safe(game_area, mario_pos):
                 print("bee jump safe")
                 self.actions.extend(["jump"])
@@ -352,7 +356,11 @@ class MarioExpert:
                 tick_count = 15
         elif self.is_jumpable_block_ahead(game_area, mario_pos):
             print("on block")
-            self.actions.extend(["jump"])
+            if self.environment.game_state()["stage"] == 1:
+                self.actions.extend(["jump"])
+            else:
+                self.actions.extend(["right", "jump"])
+
             self.above_ground = True
             tick_count = 15
 
