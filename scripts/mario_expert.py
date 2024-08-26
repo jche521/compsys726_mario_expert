@@ -132,26 +132,6 @@ class MarioController(MarioEnvironment):
             return False
         return True
 
-    # new stuff here
-    def is_obstacle_ahead_in_distance(self, distance) -> bool:
-        game_area = self.game_area()
-        mario_pos = self.get_mario_in_game_area()
-        if mario_pos == -1:
-            return False
-        for i in range(distance):
-            if game_area[mario_pos.y - 1][mario_pos.x + i] == 10 or game_area[mario_pos.y][mario_pos.x + i] == 10 or \
-                    game_area[mario_pos.y - 1][mario_pos.x + i] == 14 or game_area[mario_pos.y][mario_pos.x + i] == 14:
-                return True
-        return False
-
-    def is_gap_ahead(self) -> bool:
-        game_area = self.game_area()
-        mario_pos = self.get_mario_in_game_area()
-        for i in range(3):
-            if game_area[15][mario_pos.x + i] == 0:
-                return True
-        return False
-
     def get_obstacle_height(self) -> int:
         game_area = self.game_area()
         mario_pos = self.get_mario_in_game_area()
@@ -235,6 +215,7 @@ class MarioExpert:
     def is_moving_enemy_front(self, game_area, mario_pos: Coordinate):
         for i in range(-2, 4):
             for j in range(2, 9):
+                print(f"index out of bound where?: {mario_pos.y - i} {mario_pos.x + j}")
                 if game_area[mario_pos.y - i][mario_pos.x + j] == 18:
                     return True
         return False
@@ -250,6 +231,21 @@ class MarioExpert:
             for j in range(5):
                 if game_area[mario_pos.y + i][mario_pos.x + j] == 15:
                     return True
+        return False
+
+    def is_obstacle_ahead_in_distance(self, game_area, mario_pos, distance) -> bool:
+        if mario_pos == -1:
+            return False
+        for i in range(distance):
+            if game_area[mario_pos.y - 1][mario_pos.x + i] == 10 or game_area[mario_pos.y][mario_pos.x + i] == 10 or \
+                    game_area[mario_pos.y - 1][mario_pos.x + i] == 14 or game_area[mario_pos.y][mario_pos.x + i] == 14:
+                return True
+        return False
+
+    def is_gap_ahead(self, game_area, mario_pos) -> bool:
+        for i in range(3):
+            if game_area[15][mario_pos.x + i] == 0:
+                return True
         return False
 
     def is_jumpable_block_ahead(self, game_area, mario_pos):
@@ -332,12 +328,12 @@ class MarioExpert:
             print("off block")
             self.actions.append("jump")
             tick_count = 20
-        elif self.environment.is_obstacle_ahead_in_distance(4):
+        elif self.is_obstacle_ahead_in_distance(game_area, mario_pos, 4):
             if self.is_enemy_up(coord, 40):
                 print("enemy up")
                 self.actions.append("left")
                 tick_count = 30
-            elif self.environment.is_obstacle_ahead_in_distance(3):
+            elif self.is_obstacle_ahead_in_distance(game_area, mario_pos, 3):
                 if self.environment.get_obstacle_height() > 3:
                     print("obstacle too high")
                     self.actions.append("left")
@@ -360,7 +356,7 @@ class MarioExpert:
             self.above_ground = True
             tick_count = 15
 
-        elif self.environment.is_gap_ahead():
+        elif self.is_gap_ahead(game_area, mario_pos):
             print("gap ahead")
             self.actions.extend(["jump"])
             tick_count = 50
