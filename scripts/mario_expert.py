@@ -256,6 +256,16 @@ class MarioExpert:
             return True
         return False
 
+    def is_jumpable_platform_ahead(self, game_area, mario_pos):
+        if not self.environment.can_jump():
+            return False
+        for i in range(3, 1, -1):
+            for j in range(5, 0, -1):
+                print(f"{mario_pos.y + i} {mario_pos.x + j} {game_area[mario_pos.y - i][mario_pos.x + j]}")
+                if game_area[mario_pos.y - i][mario_pos.x + j] == 10:
+                    return True
+        return False
+
     def is_stair_ahead(self, game_area, mario_pos):
         if game_area[mario_pos.y - 1][mario_pos.x + 1] == 10:
             return True
@@ -290,11 +300,12 @@ class MarioExpert:
         coord = self.environment.get_mario_pos()
         mario_x = self.environment.game_state()["x_position"]
         mario_pos = self.environment.get_mario_in_game_area()
-
+        print(game_area)
         tick_count = None
 
         # Store enemies pos if near
         self.is_enemy_near()
+
         if mario_pos == -1 or mario_pos.y >= 16:
             self.enemies = []
             self.above_ground = False
@@ -302,6 +313,10 @@ class MarioExpert:
             return None
         elif mario_x >= 2450:
             self.actions.append("right")
+        elif self.environment.game_state()["stage"] == 2 and self.is_jumpable_platform_ahead(game_area, mario_pos):
+            print("jumpable platform")
+            self.actions.extend(["jump", "right"])
+            tick_count = 10
         elif self.is_enemy_front(coord, 40):
             self.actions.append("jump")
             tick_count = 15
@@ -312,14 +327,13 @@ class MarioExpert:
             self.actions.extend(["left"])
             tick_count = 30
             self.stuck = True
-        elif self.environment.game_state()["stage"] == 1 and self.is_moving_enemy_front(game_area, mario_pos):
+        elif self.is_moving_enemy_front(game_area, mario_pos):
             if self.is_jump_safe(game_area, mario_pos):
                 self.actions.extend(["jump"])
                 tick_count = 15
             else:
                 self.actions.append("left")
                 tick_count = 30
-
         elif self.above_ground and self.is_block_ending(game_area, mario_pos):
             self.actions.append("jump")
             tick_count = 20
